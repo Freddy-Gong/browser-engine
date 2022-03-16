@@ -66,6 +66,29 @@ impl<'a> HtmlParser<'a> {
         nodes
     }
 
+    fn parse_node(&mut self)->Node{
+        let tagname = self.consume_while(is_valid_tag_name);
+        let attributes = self.parse_attributes();
+
+        let elem = ElementData::new(tagname,attributes);
+        let chidlren = self.parse_nodes()
+        Node::new(NodeType::Element(elem),children)
+    }
+
+    fn parse_text_node(&mut self) -> Node {
+        let mut text_content = String::new();
+
+        while self.chars.peek().map_or(false,|c| *c != '<'){
+            let whitespace = self.consume_while(char::is_whitespace);
+            if whitespace.len() > 0 {
+                text_content.push(' ')
+            }
+            let text_patr = self.consume_while(|x| !x.is_whitespace() && x != '<');
+            text_content.push_str(&text_part);
+        }
+        Node::new(NodeType::Text(text_content),Vec::new())
+    }
+
 
     fn consume_while<F>(&mut self, condition: F) -> String
     //复杂trait约束的写法
