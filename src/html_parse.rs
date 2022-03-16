@@ -197,6 +197,22 @@ impl<'a> HtmlParser<'a> {
         attributes
     }
 
+    fn parse_attr_value(&mut self) -> String {
+        self.consume_while(char::is_whitespace);
+
+        let result = match self.chars.peek() {
+            Some(&c) if c == '"' || c == '\'' => {
+                self.chars.next();
+                let ret = self.consume_while(|x| x != c);
+                self.chars.next();
+                ret
+            }
+            _=>self.consume_while(is_valid_attr_value),
+        };
+
+        result
+    }
+
     fn consume_while<F>(&mut self, condition: F) -> String
     //复杂trait约束的写法
     where
