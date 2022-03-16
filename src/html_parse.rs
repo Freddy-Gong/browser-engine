@@ -172,6 +172,31 @@ impl<'a> HtmlParser<'a> {
         Node::new(NodeType::Comment(comment_content),Vec::new())
     }
 
+    fn parse_attributes(&mut self) -> AttrMap {
+        let mut attributes = AttrMap::new()
+
+        while self.chars.peek().map_or(false, |c| *c != '>'){
+            self.consume_while(char::is_whitespace);
+            let name = self.consume_while(|c| is_valid_attr_name(c)).to_lowercase();
+            self.consume_while(char::is_whitespace);
+
+            let value = if self.chars.peek().map_or(false,|c| *c == '='){
+                self.chars.next()
+                self.consume_while(char::is_whitespace);
+                let s = self.parse_attr_value();
+                self.consume_while(|c| !c.is_whitespace() && c != '>')
+                self.consume_while(char::is_whitespace);
+                s
+            }else {
+                "".to_string()
+            };
+            attributes.insert(name,value);
+        }
+        self.chars.next();
+
+        attributes
+    }
+
     fn consume_while<F>(&mut self, condition: F) -> String
     //复杂trait约束的写法
     where
