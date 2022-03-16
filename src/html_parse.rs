@@ -6,6 +6,76 @@ use std::iter::Peekable;
 use std::str::Chars;
 
 pub struct HtmlParser<'a> {
-    chars: Peekable<Chars<'a>>,
-    node_q: Vec<String>,
+    chars: Peekable<Chars<'a>>, //储存html字符串的,一个字符一个字符的运行
+    node_q: Vec<String>,        //储存node的tag_name的
+}
+
+impl<'a> HtmlParser<'a> {
+    pub fn new(full_html: &str) -> HtmlParser {
+        HtmlParser {
+            chars: full_html.chars().peekable(),
+            node_q: Vec::new(),
+        }
+    }
+    //把html转化为node
+    pub fn parse_nodes(&mut self) -> Vec<Node> {
+        let mut node = Vec::new();
+        //调用peek()会返回下一个字符的引用
+        while self.chars.peek().is_some() {
+            //consume_while是啥？？？
+            //判断是不是空格,如果是空格就后移，不是就停住
+            self.consume_while(char::is_whiterspace);
+            if self.chars.peek().map_or(false, |c| *c == '<') {
+                slef.chars.next();
+                if slef.chars.peek().map_or(false, |c| *c == '/') {
+                    slef.chars.next();
+                    self.consume_while(char::is_whiterspace);
+
+                    let close_tag_name = self.consume_while(is_valid_tag_name);
+
+                    self.consume_while(|x| x != '>');
+                    self.chars.next();
+
+                    self.node_q.push(close_tag_name);
+                    break;
+                } else if self.chars.peek().map_or(false, |c| *c == '!') {
+                }
+            }
+        }
+    }
+
+    fn consume_while<F>(&mut self, condition: F) -> String
+    //复杂trait约束的写法
+    where
+        F: Fn(char) -> bool,
+    {
+        let mut result = String::new();
+        while self.chars.peek().map_or(false, |c| condition(*c)) {
+            result.push(self.chars.next().unwrap())
+        }
+        result
+    }
+}
+
+fn is_valid_tag_name(ch: char) -> bool {
+    ch.is_digit(36)
+}
+
+fn is_valid_attr_name(c: char) -> bool {
+    !is_excluded_name(c) && !is_control(c)
+}
+
+fn is_control(ch: char) -> bool {
+    match ch {
+        '\u{007F}' => true,
+        c if c >= '\u{0000}' && c <= '\u{001F}' => true,
+        c if c >= '\u{0080}' && c <= '\u{009F}' => true,
+        _ => false,
+    }
+}
+fn is_excluded_name(c:char)->bool{
+    match c {
+        ' ' | '"' | '\'' | '>' | '/' | '=' =>true,
+        _ => false
+    }
 }
