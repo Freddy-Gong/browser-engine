@@ -1,17 +1,18 @@
 use std::collections::{HashMap, HashSet};
 use std::fmt;
-struct Node {
+#[derive(PartialEq, Eq)]
+pub struct Node {
     children: Vec<Node>,
     node_type: NodeType,
 }
-
-enum NodeType {
+#[derive(PartialEq, Eq, Clone)]
+pub enum NodeType {
     Text(String),
     Element(ElementData),
     Comment(String),
 }
-
-struct ElementData {
+#[derive(PartialEq, Eq, Clone)]
+pub struct ElementData {
     tag_name: String,
     attributes: AttrMap,
 }
