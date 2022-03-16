@@ -17,9 +17,9 @@ impl<'a> HtmlParser<'a> {
             node_q: Vec::new(),
         }
     }
-    //把html转化为node
+    //把html Element 转化为node
     pub fn parse_nodes(&mut self) -> Vec<Node> {
-        let mut node = Vec::new();
+        let mut nodes = Vec::new();
         //调用peek()会返回下一个字符的引用
         while self.chars.peek().is_some() {
             //consume_while是啥？？？
@@ -39,10 +39,33 @@ impl<'a> HtmlParser<'a> {
                     self.node_q.push(close_tag_name);
                     break;
                 } else if self.chars.peek().map_or(false, |c| *c == '!') {
+                    self.chars.next();
+                    nodes.push(self.parse_comment_node())
+                }else{
+                    let mut node = self.parse_nodes();
+                    let insert_index = nodes.len();
+
+                    match &node.node_type {
+                        NodeType::Element(e) => if self.node_q.len() > 0 {
+                            let assumed_tag = self.node_q.remove(0);
+
+                            if e.tag_name != assumed_tag {
+                                nodes.append(&mut node.children);
+                                self.node_q.insert(0,assumed_tag)
+                            }
+                        },
+                        _ => {}
+                    }
+
+                    nodes.insert(insert_index, node)
                 }
+            }else {
+                nodes.push(self.parse_text_node())
             }
         }
+        nodes
     }
+
 
     fn consume_while<F>(&mut self, condition: F) -> String
     //复杂trait约束的写法
@@ -73,6 +96,7 @@ fn is_control(ch: char) -> bool {
         _ => false,
     }
 }
+
 fn is_excluded_name(c:char)->bool{
     match c {
         ' ' | '"' | '\'' | '>' | '/' | '=' =>true,
