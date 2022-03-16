@@ -81,7 +81,7 @@ impl<'a> HtmlParser<'a> {
         while self.chars.peek().map_or(false,|c| *c != '<'){
             let whitespace = self.consume_while(char::is_whitespace);
             if whitespace.len() > 0 {
-                text_content.push(' ')
+                text_content.push(' ');
             }
             let text_patr = self.consume_while(|x| !x.is_whitespace() && x != '<');
             text_content.push_str(&text_part);
@@ -89,6 +89,88 @@ impl<'a> HtmlParser<'a> {
         Node::new(NodeType::Text(text_content),Vec::new())
     }
 
+    fn parse_comment_node(&mut self) -> Node {
+        let comment_content = String::new()
+        //<!---  ----->判断这种注释符号的
+        if self.chars.peek().map_or(false,|c| *c == '-'){
+            self.chars.next();
+            if self.chars.peek().map_or(false, |c| *c == '-'){
+                self.chars.next()
+            }else{
+                self.consume_while(|c| c!= '>');
+                return Node::new(NodeType::Comment(comment_content),Vec::new())
+            }
+        }else{
+            self.consume_while(|c| c != '>');
+            return Node::new(NodeType::Comment(comment_content),Vec::new())
+        }
+
+        if self.chars.peek().map_or(false,|c| *c == '>'){
+            self.chars.next()
+            return Node::new(NodeType::Comment(comment_content),Vec::new())
+        }
+
+        if self.chars.peek().map_or(false, |c| *c == '-'){
+            self.chars.next();
+            if self.chars.peek().map_or(false, |c| *c == '>'){
+                self.chars.next();
+                return Node::new(NodeType::Comment(comment_content),Vec::new());
+            }else{
+                comment_content.push('-');
+            }
+        }
+
+        while self.chars.peek().is_some() {
+            comment_content.push_str(&self.consume_while(|c| c!= '<' && c != '-'));
+            if self.chars.peek().map_or(false,|c| *c == '<'){
+                self.chars.next();
+                if self.chars.peek().map_or(false, |c| *c == '!'){
+                    self.chars.next();
+                    if self.chars.peek().map_or(false, |c| *c == '-'){
+                        self.chars.next();
+                        if self.chars.peek().map_or(false, |c| *c == '-'){
+                            self.consume_while(|c| c != '>');
+
+                            return Node::new(NodeType::Comment(String::from("")),Vec::new())
+                        }else {
+                            comment_content.push_str("<!-")
+                        }
+                    }else if self.chars.peek().map_or(false,|c| *c == ' '){
+                        self.chars.next()
+                        if self.chars.peek().map_or(false,|c| *c == '-'){
+                            self.chars.next()
+                            if self.chars.peek().map_or(false,|c| *c == '-'){
+                                self.chars.next()
+                                if self.chars.peek().map_or(false,|c| *c == '-'){
+                                    self.chars.next()
+                                    if self.chars.peek().map_or(false,|c| *c == '>'){
+                                        self.chars.next()
+                                        return Node::new(
+                                            NodeType::Comment(String::from("")),
+                                            Vec::new(),
+                                        )
+                                    }else {
+                                        comment_content.push_str("<! --")
+                                    }
+                                }else{
+                                    comment_content.push_str("<! -")
+                                }
+                            }else{
+                                comment_content.push_str("<! ")
+                            }
+                        }
+                    }else{
+                        comment_content.push_str("<!")
+                    }
+                }else{
+                    comment_content.push_str("<")
+                }
+            }else if self.chars.peek().map_or(false,|c| *c == '-'){
+                self.chars.next()
+            }
+        }
+        Node::new(NodeType::Comment(comment_content),Vec::new())
+    }
 
     fn consume_while<F>(&mut self, condition: F) -> String
     //复杂trait约束的写法
