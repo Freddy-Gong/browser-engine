@@ -22,43 +22,48 @@ impl<'a> HtmlParser<'a> {
         let mut nodes = Vec::new();
         //调用peek()会返回下一个字符的引用
         while self.chars.peek().is_some() {
-            //consume_while是啥？？？
-            //判断是不是空格,如果是空格就后移，不是就停住
+            //判断是不是空格,如果是空格就后移，不是就停住,把空格组成的字符串返回
             self.consume_while(char::is_whiterspace);
+            //判断标签
             if self.chars.peek().map_or(false, |c| *c == '<') {
-                slef.chars.next();
+                slef.chars.next();//next会将字符位置后移，peek则不会
+                //判断闭合标签
                 if slef.chars.peek().map_or(false, |c| *c == '/') {
                     slef.chars.next();
+                    //去除空格
                     self.consume_while(char::is_whiterspace);
-
+                    //获取标签名称
                     let close_tag_name = self.consume_while(is_valid_tag_name);
-
+                    //标签闭合
                     self.consume_while(|x| x != '>');
                     self.chars.next();
-
                     self.node_q.push(close_tag_name);
                     break;
                 } else if self.chars.peek().map_or(false, |c| *c == '!') {
                     self.chars.next();
                     nodes.push(self.parse_comment_node())
+                //判断标签起始
                 }else{
-                    let mut node = self.parse_nodes();
+                    //解析标签的内容
+                    let mut node = self.parse_node();
                     let insert_index = nodes.len();
 
                     match &node.node_type {
                         NodeType::Element(e) => if self.node_q.len() > 0 {
                             let assumed_tag = self.node_q.remove(0);
-
+                            //如果当前tagname和第一个tagnema不想等，则插入最后
                             if e.tag_name != assumed_tag {
                                 nodes.append(&mut node.children);
                                 self.node_q.insert(0,assumed_tag)
                             }
+                            //那相等呢？？把一个移除了？？什么鬼？
                         },
                         _ => {}
                     }
 
                     nodes.insert(insert_index, node)
                 }
+            //不是标签就parse文字
             }else {
                 nodes.push(self.parse_text_node())
             }
@@ -177,9 +182,10 @@ impl<'a> HtmlParser<'a> {
 
         while self.chars.peek().map_or(false, |c| *c != '>'){
             self.consume_while(char::is_whitespace);
+            //属性名 
             let name = self.consume_while(|c| is_valid_attr_name(c)).to_lowercase();
             self.consume_while(char::is_whitespace);
-
+            //属性值
             let value = if self.chars.peek().map_or(false,|c| *c == '='){
                 self.chars.next()
                 self.consume_while(char::is_whitespace);
@@ -227,6 +233,8 @@ impl<'a> HtmlParser<'a> {
 }
 
 fn is_valid_tag_name(ch: char) -> bool {
+    //0~9就是数字
+    //10-35就是字母
     ch.is_digit(36)
 }
 

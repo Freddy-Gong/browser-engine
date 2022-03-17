@@ -31,7 +31,7 @@ impl ElementData {
     //获取元素的class
     //因为class是可以有多个的 所以我们要把它用空格切分开
     //放在一个HashSet中
-    fn get_CLasses(&self) -> HashSet<&str> {
+    fn get_Classes(&self) -> HashSet<&str> {
         match self.attributes.get("class") {
             Some(s) => s.split(' ').collect(),
             None => HashSet::new(),
